@@ -1,0 +1,24 @@
+FROM amazoncorretto:17-alpine
+
+# Install supervisord to manage multiple processes
+RUN apk add --no-cache supervisor curl
+
+WORKDIR /app
+
+# Copy both JAR files
+COPY client/target/client-0.0.1-SNAPSHOT.jar client.jar
+COPY server/target/server-0.0.1-SNAPSHOT.jar server.jar
+
+# Create supervisor configuration
+RUN mkdir -p /etc/supervisor/conf.d
+
+# Create supervisor config file
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create startup script
+COPY start-services.sh /app/start-services.sh
+RUN chmod +x /app/start-services.sh
+
+EXPOSE 8080 8095
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

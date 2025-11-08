@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: client
+  ai:
+    openai:
+      api-key: [placeholder]
+      chat:
+        options:
+          model: gpt-4o
+    mcp:
+      client:
+        sse:
+          connections:
+            mcp-http-sse:
+              url: http://localhost:8095
+logging:
+  level:
+    org:
+      springframework:
+        ai: DEBUG
+
+#  main:
+#    banner-mode: off
+#logging:
+#  level:
+#    root: off
