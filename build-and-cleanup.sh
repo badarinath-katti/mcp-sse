@@ -124,25 +124,78 @@ ls -la | grep -E '^d|^-.*\.(sh|yml|yaml|conf|md|jar)$' | head -20
 
 # Step 7: Start new container
 print_status "Starting new container..."
-docker run -d --name mcp-combined-container -p 8080:8080 -p 8095:8095 mcp-combined
+
+# Check if OPENAI_API_KEY is set and not empty
+if [ -n "$OPENAI_API_KEY" ] && [ "$OPENAI_API_KEY" != "" ]; then
+    print_success "Using provided OPENAI_API_KEY environment variable"
+    docker run -d --name mcp-combined-container \
+        -p 8080:8080 \
+        -p 8095:8095 \
+        -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+        -e MCP_SERVER_URL="http://localhost:8095" \
+        mcp-combined
+else
+    print_warning "No OPENAI_API_KEY provided. Client service AI features will not work."
+    print_warning "To use OpenAI features, run with:"
+    print_warning "  OPENAI_API_KEY=sk-your-key ./build-and-cleanup.sh"
+    docker run -d --name mcp-combined-container \
+        -p 8080:8080 \
+        -p 8095:8095 \
+        -e MCP_SERVER_URL="http://localhost:8095" \
+        mcp-combined
+fi
+
 if [ $? -eq 0 ]; then
     print_success "Container started successfully"
     
-    # Wait a moment for services to start
-    sleep 3
+    # Wait for services to start
+    print_status "Waiting for services to initialize..."
+    sleep 5
     
     # Check container status
     if docker ps | grep -q mcp-combined-container; then
         print_success "Container is running properly"
+        
+        # Test if services are responding
+        print_status "Testing service connectivity..."
+        if curl -s -f http://localhost:8080/ > /dev/null 2>&1; then
+            print_success "Client service is responding on port 8080"
+        else
+                print_warning "Client service may still be starting up"
+        fi
+        
+        if curl -s -f http://localhost:8095/ > /dev/null 2>&1; then
+            print_success "Server service is responding on port 8095"
+        else
+            print_warning "Server service may still be starting up"
+        fi
+        
         echo ""
         echo "🎉 Build and cleanup completed successfully!"
         echo ""
         echo "Services are now available at:"
-        echo "  • client: http://localhost:8080"
-        echo "  • server: http://localhost:8095"
+        echo "  • Client (MCP Client): http://localhost:8080"
+        echo "    - GET /1 - Ask AI 'how are you doing?'"
+        echo "    - GET /2 - Ask AI for SAP stock price"
+        echo "    - GET /env - Check environment variables"
+        echo "  • Server (MCP Server): http://localhost:8095"
         echo ""
-        echo "To check logs: docker logs mcp-combined-container"
-        echo "To stop:       docker stop mcp-combined-container"
+        
+        if [ -n "$OPENAI_API_KEY" ] && [ "$OPENAI_API_KEY" != "" ]; then
+            echo "✅ OpenAI API key configured - AI endpoints should work"
+            echo "   Test with: curl http://localhost:8080/1"
+            echo "   Check env: curl http://localhost:8080/env/OPENAI_API_KEY"
+        else
+            echo "⚠️  No OpenAI API key configured"
+            echo "   AI endpoints will show authentication errors"
+            echo "   To fix: OPENAI_API_KEY=sk-your-key ./build-and-cleanup.sh"
+            echo "   Check env: curl http://localhost:8080/env/OPENAI_API_KEY"
+        fi
+        echo ""
+        echo "Useful commands:"
+        echo "  Check logs:  docker logs mcp-combined-container"
+        echo "  Stop:        docker stop mcp-combined-container"
+        echo "  Restart:     docker restart mcp-combined-container"
     else
         print_error "Container failed to start properly"
         exit 1

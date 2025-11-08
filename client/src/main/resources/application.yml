@@ -3,7 +3,7 @@ spring:
     name: client
   ai:
     openai:
-      api-key: [placeholder]
+      api-key: ${OPENAI_API_KEY}
       chat:
         options:
           model: gpt-4o

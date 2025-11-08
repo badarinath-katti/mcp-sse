@@ -31,22 +31,43 @@ This project demonstrates a Model Context Protocol (MCP) client-server implement
 
 ### Quick Start (Automated Script)
 
-Use the automated build and cleanup script:
+Use the automated build and cleanup script with your OpenAI API key:
 ```bash
-./build-and-cleanup.sh
+OPENAI_API_KEY=sk-your-actual-api-key ./build-and-cleanup.sh
 ```
 
 This script will:
 - Build both client and server Maven projects
 - Create Docker image with linux/amd64 platform
-- Start services in a combined container
+- Start services in a combined container with environment variables
 - Clean up unnecessary files
+- Configure OpenAI API key for AI functionality
+
+### Environment Variable Setup
+
+#### Option 1: Direct Command Line
+```bash
+OPENAI_API_KEY=sk-your-actual-api-key ./build-and-cleanup.sh
+```
+
+#### Option 2: Export Environment Variable
+```bash
+export OPENAI_API_KEY=sk-your-actual-api-key
+./build-and-cleanup.sh
+```
+
+#### Option 3: Create .env File
+```bash
+echo "OPENAI_API_KEY=sk-your-actual-api-key" > .env
+source .env
+./build-and-cleanup.sh
+```
 
 ### Docker Deployment Options
 
 1. **Combined Service Container** (Recommended):
 ```bash
-./build-and-cleanup.sh
+OPENAI_API_KEY=sk-your-actual-api-key ./build-and-cleanup.sh
 ```
 
 2. **Manual Docker Build**:
@@ -55,12 +76,19 @@ This script will:
 cd client && ./mvnw clean package -DskipTests && cd ..
 cd server && ./mvnw clean package -DskipTests && cd ..
 
-# Build and run Docker image
+# Build and run Docker image with environment variables
 docker build --platform linux/amd64 -f Dockerfile.combined -t mcp-combined .
-docker run -d -p 8080:8080 -p 8095:8095 --name mcp-services mcp-combined
+docker run -d -p 8080:8080 -p 8095:8095 \
+  -e OPENAI_API_KEY=sk-your-actual-api-key \
+  --name mcp-services mcp-combined
 ```
 
-3. **Push to Registry**:
+3. **Using Docker Compose**:
+```bash
+OPENAI_API_KEY=sk-your-actual-api-key docker-compose up -d
+```
+
+4. **Push to Registry**:
 ```bash
 REGISTRY_USERNAME=your-username ./push-to-registry.sh
 ```
@@ -80,7 +108,7 @@ cd server && ./mvnw spring-boot:run
 
 3. Start MCP Client (in another terminal):
 ```bash
-cd client && OPENAI_API_KEY=your-api-key ./mvnw spring-boot:run
+cd client && OPENAI_API_KEY=sk-your-actual-api-key ./mvnw spring-boot:run
 ```
 
 ## API Endpoints
